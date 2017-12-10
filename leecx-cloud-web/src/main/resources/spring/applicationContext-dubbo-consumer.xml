@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		http://code.alibabatech.com/schema/dubbo  
+        http://code.alibabatech.com/schema/dubbo/dubbo.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd">
+		
+	<!-- 扫描包加载Service或者实现类 -->
+	<context:component-scan base-package="com.itzixi.curator.utils"></context:component-scan>
+	
+	
+	<!-- 消费方应用名，用于计算依赖关系，不是匹配条件，不要与提供方一样 -->
+	<dubbo:application name="leecx-cloud-web" />
+
+	<!-- 使用zookeeper注册中心暴露服务地址 -->
+	<!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->
+	<!-- 注册中心地址 -->
+	<!--所有参与分布式事务的模块以及TxManager都必须要在同一个服务下-->
+	<dubbo:registry protocol="zookeeper" address="192.168.1.210:2181"/>
+	
+	<!-- 监控中心配置，protocol="registry"，表示从注册中心发现监控中心地址 -->
+	<!-- <dubbo:monitor protocol="registry"/> -->
+
+	<!-- 生成远程服务代理，可以和本地bean一样使用itemFacade -->
+	<!-- 用户服务接口 -->
+	<!-- 
+		集群配置：
+		retries="2" cluster="failover" 这两个配置放在 consumer 或者 provider 其中一端即可
+		
+		failover(推荐/默认): 失败自动切换，当出现失败，重试其他服务器（缺省），通常用于读操作，但重试会带来更长的延时，可通过retries=“2”来设置重试次数（不含第一次） 
+		<dubbo:service retries="2"> 
+		或者 
+		<dubbo:reference retries="2"> 
+		
+		failfast: 快速失效，只发起一次调用，失败立即报错。通常用于非幂等性写操作，比如说新增记录 
+		<dubbo:service cluster="failfast"> 
+		或者 
+		<dubbo:reference cluster="failfast">
+		
+		failsaft: 失败安全，出现异常时，直接忽略，通常用于写入审计日志等操作 
+		<dubbo:service cluster="failsafe"> 
+		或者 
+		<dubbo:reference cluster="failsafe"> 
+		
+		failback: 失败自动恢复，后台记录失败请求，定时重发，通常用于消息通知操作 
+		<dubbo:service cluster="failback"> 
+		或者 
+		<dubbo:reference cluster="failback"> 
+		
+		forking:
+		并行调用多个服务器，只要一个成功即返回。通常用于实时性要求较高的读操作，但需要浪费更多的服务器资源。可通过forks=“2”来设置最大并行数。 
+		<dubbo:service cluster="forking"> 
+		或者 
+		<dubbo:reference cluster="forking"> 
+	 -->
+	 <!-- 
+	 	dubbo 启动时检查
+	 	dubbo默认会在启动时检查依赖的服务是否可用，不可用时会抛出异常，阻止Spring初始化完成，以便上线时，能及早发现问题，默认check=true
+	  -->
+	  <!-- 
+	  	dubbo 懒加载
+	  	如果需要懒加载，即没有引用也立即生成动态代理，则可以配置  init="true"
+	   -->
+<!-- 	<dubbo:reference retries="2" cluster="failover" interface="com.itzixi.items.service.ItemsService" id="itemsService" check="false"/> -->
+	<dubbo:reference retries="0" interface="com.itzixi.items.service.ItemsService" id="itemsService" check="false" init="true"/>
+	<dubbo:reference retries="0" interface="com.itzixi.orders.service.OrdersService" id="ordersService" check="false" init="true"/>
+	
+	<!-- 
+		结果缓存，用于加速热门数据的访问速度，Dubbo提供声明式缓存，以减少用户加缓存的工作量
+		lru 基于最近最少使用原则删除多余缓存，保持最热的数据被缓存。
+		threadlocal 当前线程缓存，比如一个页面渲染，用到很多portal，每个portal都要去查用户信息，通过线程缓存，可以减少这种多余访问。
+		jcache 与JSR107集成，可以桥接各种缓存实现。
+	 -->
+<!-- 	<dubbo:reference interface="com.itzixi.items.service.ItemsService" id="itemsService" cache="lru"/> -->
+	
+</beans>
